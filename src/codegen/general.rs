@@ -203,7 +203,7 @@ pub fn define_object_type(
     writeln!(w, "\tmatch fn {{")?;
     writeln!(
         w,
-        "\t\tget_type => || {}::{}(),",
+        "\t\ttype_ => || {}::{}(),",
         sys_crate_name, glib_func_name
     )?;
     writeln!(w, "\t}}")?;
@@ -255,11 +255,7 @@ fn define_boxed_type_internal(
     }
 
     if let Some(ref get_type_fn) = get_type_fn {
-        writeln!(
-            w,
-            "\t\tget_type => || {}::{}(),",
-            sys_crate_name, get_type_fn
-        )?;
+        writeln!(w, "\t\ttype_ => || {}::{}(),", sys_crate_name, get_type_fn)?;
     }
     writeln!(w, "\t}}")?;
     writeln!(w, "}}")?;
@@ -388,11 +384,7 @@ pub fn define_auto_boxed_type(
         writeln!(w, "\t\tclear => {},", clear_function_expression,)?;
     }
 
-    writeln!(
-        w,
-        "\t\tget_type => || {}::{}(),",
-        sys_crate_name, get_type_fn
-    )?;
+    writeln!(w, "\t\ttype_ => || {}::{}(),", sys_crate_name, get_type_fn)?;
     writeln!(w, "\t}}")?;
     writeln!(w, "}}")?;
 
@@ -426,11 +418,7 @@ fn define_shared_type_internal(
         sys_crate_name, unref_fn
     )?;
     if let Some(ref get_type_fn) = get_type_fn {
-        writeln!(
-            w,
-            "\t\tget_type => || {}::{}(),",
-            sys_crate_name, get_type_fn
-        )?;
+        writeln!(w, "\t\ttype_ => || {}::{}(),", sys_crate_name, get_type_fn)?;
     }
     writeln!(w, "\t}}")?;
     writeln!(w, "}}")?;
