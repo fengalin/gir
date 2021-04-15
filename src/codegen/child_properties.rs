@@ -65,9 +65,9 @@ fn generate_func(
 }
 
 fn declaration(env: &Env, prop: &ChildProperty, is_get: bool) -> String {
-    let get_set = if is_get { "get" } else { "set" };
+    let get_set = if is_get { "" } else { "set_" };
     let prop_name = nameutil::signal_to_snake(&*prop.name);
-    let func_name = format!("{}_{}_{}", get_set, prop.child_name, prop_name);
+    let func_name = format!("{}{}_{}", get_set, prop.child_name, prop_name);
     let mut bounds = if let Some(typ) = prop.child_type {
         let child_type = rust_type(env, typ).into_string();
         format!("T: IsA<{}>", child_type)
