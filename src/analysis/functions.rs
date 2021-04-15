@@ -479,28 +479,10 @@ fn analyze_callbacks(
     }
 }
 
-fn try_getter_rename(func: &library::Function, name: &str) -> Option<String> {
-    let nb_in_params = func
-        .parameters
-        .iter()
-        .filter(|param| library::ParameterDirection::In == param.direction)
-        .fold(0, |acc, _| acc + 1);
-    if nb_in_params == 1 {
-        // This could be a getter
-        let is_bool_getter = (func.parameters.len() == nb_in_params)
-            && (func.ret.typ == library::TypeId::tid_bool());
-        return getter_rules::try_rename_would_be_getter(name, is_bool_getter)
-            .ok()
-            .map(getter_rules::NewName::unwrap);
-    }
-
-    None
-}
-
 fn analyze_function(
     env: &Env,
     obj: &config::gobjects::GObject,
-    mut name: String,
+    name: String,
     status: GStatus,
     func: &library::Function,
     type_tid: library::TypeId,
@@ -551,26 +533,33 @@ fn analyze_function(
         commented = true;
     }
 
-    let mut new_name = configured_functions
-        .iter()
-        .filter_map(|f| f.rename.clone())
-        .next();
+    let mut new_name = configured_functions.iter().find_map(|f| f.rename.clone());
 
     let bypass_auto_rename = configured_functions.iter().any(|f| f.bypass_auto_rename);
     if !bypass_auto_rename && new_name.is_none() {
         match func.kind {
-            library::FunctionKind::Method => {
-                new_name = try_getter_rename(func, &name);
+            library::FunctionKind::Function
+            | library::FunctionKind::Global
+            | library::FunctionKind::Method => {
+                let nb_in_params = func
+                    .parameters
+                    .iter()
+                    .filter(|param| library::ParameterDirection::In == param.direction)
+                    .fold(0, |acc, _| acc + 1);
+                let is_bool_getter = (func.parameters.len() == nb_in_params)
+                    && (func.ret.typ == library::TypeId::tid_bool());
+                new_name = getter_rules::try_rename_would_be_getter(&name, is_bool_getter)
+                    .ok()
+                    .map(getter_rules::NewName::unwrap);
             }
             library::FunctionKind::Constructor => {
                 if name.starts_with("new_from")
                     || name.starts_with("new_with")
                     || name.starts_with("new_for")
                 {
-                    name = name[4..].to_string();
+                    new_name = Some(name[4..].to_string());
                 }
             }
-            _ => (),
         }
     }
 
@@ -583,16 +572,12 @@ fn analyze_function(
     let deprecated_version = func.deprecated_version;
     let cfg_condition = configured_functions
         .iter()
-        .filter_map(|f| f.cfg_condition.clone())
-        .next();
+        .find_map(|f| f.cfg_condition.clone());
     let doc_hidden = configured_functions.iter().any(|f| f.doc_hidden);
     let disable_length_detect = configured_functions.iter().any(|f| f.disable_length_detect);
     let no_future = configured_functions.iter().any(|f| f.no_future);
     let unsafe_ = configured_functions.iter().any(|f| f.unsafe_);
-    let assertion = configured_functions
-        .iter()
-        .filter_map(|f| f.assertion)
-        .next();
+    let assertion = configured_functions.iter().find_map(|f| f.assertion);
 
     let imports = &mut imports.with_defaults(version, &cfg_condition);
 
